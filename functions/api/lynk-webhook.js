@@ -1,12 +1,18 @@
 export async function onRequestPost(context) {
   const { request, env } = context;
+  
+  const headers = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  
   const body = await request.json();
-  const signature = request.headers.get('X-Lynk-Signature');
-  const merchantKey = env.LYNK_MERCHANT_KEY;
-  if (!signature || !merchantKey) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-  console.log('Data dari Lynk.id:', body);
+  
+  console.log('--- HEADERS DARI LYNK.ID ---');
+  console.log(JSON.stringify(headers));
+  console.log('--- BODY DARI LYNK.ID ---');
+  console.log(JSON.stringify(body));
+
   return new Response(JSON.stringify({ status: 'ok' }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
