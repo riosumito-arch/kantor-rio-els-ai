@@ -4,27 +4,24 @@ alter table public.companies
   add column if not exists download_links jsonb not null default '[]'::jsonb;
 
 update public.companies set download_links = '[
-  {"label":"Claude","url":"https://claude.ai/"},
-  {"label":"ChatGPT","url":"https://chatgpt.com/"},
-  {"label":"OpenAI API Platform","url":"https://platform.openai.com/"},
-  {"label":"Anthropic Console","url":"https://console.anthropic.com/"},
-  {"label":"Lynk.id","url":"https://www.lynk.id/"},
-  {"label":"Shopee Seller Centre","url":"https://seller.shopee.co.id/"},
-  {"label":"TikTok Shop & Tokopedia Seller Center","url":"https://seller-id.tiktok.com/"},
-  {"label":"MetaTrader 4","url":"https://www.metatrader4.com/en"},
-  {"label":"MetaTrader 5","url":"https://www.metatrader5.com/en/download"},
-  {"label":"Stockbit","url":"https://stockbit.com/"}
+  {"label":"Shopee Indonesia","url":"https://shopee.co.id/"},
+  {"label":"Tokopedia","url":"https://www.tokopedia.com/"},
+  {"label":"TikTok Shop","url":"https://shop.tiktok.com/"},
+  {"label":"Lazada Indonesia","url":"https://www.lazada.co.id/"},
+  {"label":"Blibli","url":"https://www.blibli.com/"},
+  {"label":"Bukalapak","url":"https://www.bukalapak.com/"},
+  {"label":"Facebook Marketplace","url":"https://www.facebook.com/marketplace/"},
+  {"label":"Instagram Shop","url":"https://www.instagram.com/"},
+  {"label":"Shopify","url":"https://www.shopify.com/"},
+  {"label":"WooCommerce","url":"https://woocommerce.com/"}
 ]'::jsonb where download_links = '[]'::jsonb;
 
 alter table public.ai_employees
   add column if not exists job_description text not null default '',
   add column if not exists ai_provider text not null default 'openai';
 
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'ai_employees_ai_provider_check') then
-    alter table public.ai_employees add constraint ai_employees_ai_provider_check check (ai_provider in ('openai','anthropic'));
-  end if;
-end $$;
+alter table public.ai_employees drop constraint if exists ai_employees_ai_provider_check;
+alter table public.ai_employees add constraint ai_employees_ai_provider_check check (ai_provider in ('openai','anthropic','chatgpt'));
 
 update public.ai_employees
 set job_description = case department
