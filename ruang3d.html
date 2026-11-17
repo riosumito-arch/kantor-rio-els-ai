@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kantor AI 3D - Rio.Els</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a2e; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px; width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Memuat Kantor 3D... (Gunakan mouse untuk memutar)</div>
+    
+    <!-- Import Three.js -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Setup Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e); // Warna background gelap
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Posisi kamera isometric
+        camera.position.set(20, 20, 20); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Aktifkan bayangan
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Kontrol Mouse
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // 3. Pencahayaan
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // --- FUNGSI MEMBUAT OBJEK 3D ---
+
+        // Fungsi membuat Meja
+        function createDesk(x, z, color) {
+            const group = new THREE.Group();
+
+            // Daun Meja
+            const topGeo = new THREE.BoxGeometry(4, 0.2, 2);
+            const topMat = new THREE.MeshStandardMaterial({ color: 0xdfe6e9 });
+            const top = new THREE.Mesh(topGeo, topMat);
+            top.position.y = 1.5;
+            top.castShadow = true;
+            top.receiveShadow = true;
+            group.add(top);
+
+            // Kaki Meja
+            const legGeo = new THREE.BoxGeometry(0.2, 1.5, 0.2);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x636e72 });
+            const legPositions = [
+                [-1.8, 0.75, -0.8], [1.8, 0.75, -0.8],
+                [-1.8, 0.75, 0.8], [1.8, 0.75, 0.8]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeo, legMat);
+                leg.position.set(...pos);
+                leg.castShadow = true;
+                group.add(leg);
+            });
+
+            // Monitor
+            const monitorGeo = new THREE.BoxGeometry(1.2, 0.8, 0.1);
+            const monitorMat = new THREE.MeshStandardMaterial({ color: 0x2d3436 });
+            const monitor = new THREE.Mesh(monitorGeo, monitorMat);
+            monitor.position.set(0, 2, -0.5);
+            monitor.castShadow = true;
+            group.add(monitor);
+
+            // Layar Monitor (Nyala)
+            const screenGeo = new THREE.PlaneGeometry(1, 0.6);
+            const screenMat = new THREE.MeshBasicMaterial({ color: color }); // Warna sesuai divisi
+            const screen = new THREE.Mesh(screenGeo, screenMat);
+            screen.position.set(0, 2, -0.44);
+            group.add(screen);
+
+            group.position.set(x, 0, z);
+            return group;
+        }
+
+        // Fungsi membuat Karakter Sederhana
+        function createCharacter(x, z, bodyColor) {
+            const group = new THREE.Group();
+            
+            // Badan
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.2, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            body.castShadow = true;
+            group.add(body);
+
+            // Kepala
+            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffeaa7 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.5;
+            head.castShadow = true;
+            group.add(head);
+
+            group.position.set(x, 0, z);
+            return group;
+        }
+
+        // --- MENYUSUN RUANGAN ---
+
+        // 1. Lantai
+        const floorGeo = new THREE.PlaneGeometry(30, 30);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // 2. Garis Grid Lantai (Opsional)
+        const gridHelper = new THREE.GridHelper(30, 30, 0x00cec9, 0x636e72);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // 3. Tambahkan Meja & Karakter (CEO)
+        const ceoDesk = createDesk(0, -10, 0xfdcb6e); // Meja Kuning (CEO)
+        scene.add(ceoDesk);
+        const ceoChar = createCharacter(0, -8.5, 0x0984e3); // Karakter Biru
+        scene.add(ceoChar);
+
+        // 4. Tambahkan Meja & Karakter (Keuangan)
+        const finDesk = createDesk(10, -10, 0x00b894); // Meja Hijau
+        scene.add(finDesk);
+        const finChar = createCharacter(10, -8.5, 0x00b894);
+        scene.add(finChar);
+
+        // 5. Tambahkan Meja & Karakter (HRD)
+        const hrDesk = createDesk(-10, -10, 0xe84393); // Meja Pink
+        scene.add(hrDesk);
+        const hrChar = createCharacter(-10, -8.5, 0xe84393);
+        scene.add(hrChar);
+
+        // 6. Open Space (Karyawan)
+        const empDesk1 = createDesk(-5, 0, 0x0984e3);
+        scene.add(empDesk1);
+        const empChar1 = createCharacter(-5, 1.5, 0x6c5ce7);
+        scene.add(empChar1);
+
+        const empDesk2 = createDesk(0, 0, 0x0984e3);
+        scene.add(empDesk2);
+        const empChar2 = createCharacter(0, 1.5, 0x6c5ce7);
+        scene.add(empChar2);
+
+        const empDesk3 = createDesk(5, 0, 0x0984e3);
+        scene.add(empDesk3);
+        const empChar3 = createCharacter(5, 1.5, 0x6c5ce7);
+        scene.add(empChar3);
+
+
+        // --- ANIMASI (Looping) ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Animasi sederhana: Karakter bergerak naik-turun sedikit (seperti bernapas/mengetik)
+            ceoChar.position.y = Math.sin(time * 2) * 0.05;
+            finChar.position.y = Math.sin(time * 2 + 1) * 0.05;
+            hrChar.position.y = Math.sin(time * 2 + 2) * 0.05;
+            
+            empChar1.position.y = Math.sin(time * 3) * 0.05;
+            empChar2.position.y = Math.sin(time * 3 + 0.5) * 0.05;
+            empChar3.position.y = Math.sin(time * 3 + 1) * 0.05;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle Resize Window
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
