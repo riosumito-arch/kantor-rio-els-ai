@@ -79,7 +79,7 @@ async function refreshData() {
 }
 
 function renderHome() {
-  const buildingHead=document.querySelector('.building-head'); if(buildingHead&&!buildingHead.querySelector('.office3d-link')){const sceneLink=document.createElement('a');sceneLink.className='office3d-link';sceneLink.target='_blank';sceneLink.rel='noopener';sceneLink.textContent='Buka scene 3D ↗';buildingHead.appendChild(sceneLink)} const sceneLink=buildingHead?.querySelector('.office3d-link');const sceneUrl=`./ruang3d.html?company=${encodeURIComponent(appState.company?.name||'Kantor Rio.Els_AI')}&staff=${appState.employees.length}`;if(sceneLink)sceneLink.href=sceneUrl;
+  const buildingHead=document.querySelector('.building-head'); if(buildingHead&&!buildingHead.querySelector('.office3d-link')){const sceneLink=document.createElement('a');sceneLink.className='office3d-link';sceneLink.target='_blank';sceneLink.rel='noopener';sceneLink.textContent='Buka scene 3D ↗';buildingHead.appendChild(sceneLink)} const sceneLink=buildingHead?.querySelector('.office3d-link');const sceneUrl=`./ruang3d.html?company=${encodeURIComponent(appState.company?.name||'Kantor Rio.Els_AI')}&staff=${appState.employees.length}&names=${encodeURIComponent(JSON.stringify(appState.employees.map(e=>e.name||'Karyawan')))}`;if(sceneLink)sceneLink.href=sceneUrl;
   const paid=appState.sales.filter(x=>x.transaction_status==='paid');
   $('statRevenue').textContent=fmt(paid.reduce((s,x)=>s+Number(x.gross_amount||0),0));
   const working=appState.employees.filter(x=>['working','moving'].includes(x.work_status)).length;
