@@ -18,19 +18,57 @@ function showLogin(message='') { $('loginScreen').classList.remove('hidden'); $(
 function showApp() { $('loginScreen').classList.add('hidden'); $('app').classList.remove('hidden'); $('sideEmail').textContent=appState.user?.email || 'Owner'; }
 
 async function requestLogin(e) {
-  e.preventDefault(); const email=$('email').value.trim(); const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Mengirim…';
-  const { error } = await supabase.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + '/' } });
-  btn.disabled=false; btn.textContent='Kirim tautan masuk';
-  $('loginNotice').textContent = error ? `Gagal mengirim tautan: ${error.message}` : 'Tautan masuk telah dikirim. Silakan buka email Anda dan klik tautan tersebut untuk masuk.';
+  e.preventDefault();
+  const email = $('email').value.trim();
+  const password = $('password').value; // Pastikan input id="password" ada di HTML
+  const btn = $('loginBtn'); 
+  
+  if(!password) { 
+    $('loginNotice').textContent = 'Silakan masukkan PIN / Kata Sandi.'; 
+    return; 
+  }
+
+  btn.disabled = true; 
+  btn.textContent = 'Memproses...';
+
+  // Coba Login
+  let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  // Jika gagal karena akun belum ada, otomatis daftarkan
+  if (error && error.message.includes('Invalid login credentials')) {
+    const signUp = await supabase.auth.signUp({ email, password });
+    if (signUp.error) {
+       $('loginNotice').textContent = `Gagal: ${signUp.error.message}`;
+    } else {
+       $('loginNotice').textContent = 'Akun berhasil dibuat! Silakan klik tombol Masuk lagi.';
+    }
+  } else if (error) {
+    $('loginNotice').textContent = `Gagal masuk: ${error.message}`;
+  } else {
+    // Jika sukses login, langsung buka aplikasi
+    bootSession(data.session);
+  }
+
+  btn.disabled = false; 
+  btn.textContent = 'Masuk ke Kantor';
 }
 
 async function bootSession(session) {
   if (!session?.user) { appState.user=null; showLogin(); return; }
+  
   const {data:membership,error:memberError}=await supabase.from('company_members').select('company_id,role').eq('user_id',session.user.id).eq('active',true).eq('role','owner').limit(1).maybeSingle();
-  if(memberError||!membership){await supabase.auth.signOut();showLogin('Email ini belum ditambahkan sebagai owner kantor. Minta owner utama menambahkan akses terlebih dahulu.');return}
-  appState.user=session.user; showApp();
+  
+  if(memberError || !membership){
+    await supabase.auth.signOut();
+    showLogin('Email ini belum terdaftar sebagai owner. Pastikan Anda sudah membuat akun.');
+    return;
+  }
+  
+  appState.user=session.user; 
   appState.companyId=membership.company_id;
-  await refreshData();
+  
+  await refreshData(); 
+  showApp(); 
 }
 
 async function refreshData() {
