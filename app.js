@@ -20,8 +20,8 @@ function showApp() { $('loginScreen').classList.add('hidden'); $('app').classLis
 async function requestLogin(e) {
   e.preventDefault(); const email=$('email').value.trim(); const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Mengirim…';
   const { error } = await supabase.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + '/' } });
-  btn.disabled=false; btn.textContent='Kirim kode login';
-  $('loginNotice').textContent = error ? `Kode belum terkirim: ${error.message}` : 'Tautan masuk dikirim. Buka email owner di perangkat ini dan klik tautannya.';
+  btn.disabled=false; btn.textContent='Kirim tautan masuk';
+  $('loginNotice').textContent = error ? `Gagal mengirim tautan: ${error.message}` : 'Tautan masuk telah dikirim. Silakan buka email Anda dan klik tautan tersebut untuk masuk.';
 }
 
 async function bootSession(session) {
