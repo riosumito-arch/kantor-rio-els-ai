@@ -31,9 +31,9 @@ async function requestLogin(e) {
 async function requestPasswordReset() {
   const email=$('email').value.trim(); if(!email){$('loginNotice').textContent='Masukkan email kantor terlebih dahulu.'; $('email').focus(); return}
   const btn=$('resetPasswordBtn'); btn.disabled=true; btn.textContent='Mengirim tautan…';
-  const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/#reset-password'});
+  const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/'});
   btn.disabled=false; btn.textContent='Lupa / atur kata sandi';
-  $('loginNotice').textContent=error?'Tautan belum terkirim. Coba lagi nanti atau hubungi CEO.':'Tautan untuk mengatur kata sandi dikirim. Buka email satu kali, buat kata sandi, lalu login tanpa email berikutnya.';
+  $('loginNotice').textContent=error?`Tautan belum terkirim: ${error.message}`:'Tautan untuk mengatur kata sandi dikirim. Buka email satu kali, buat kata sandi, lalu login tanpa email berikutnya.';
 }
 async function saveNewPassword(e) {
   e.preventDefault(); const password=$('newPassword').value; if(password!==$('confirmPassword').value){$('recoveryNotice').textContent='Kedua kata sandi belum sama.';return}
