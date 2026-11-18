@@ -6,7 +6,7 @@
     <title>Kantor AI 3D - Rio.Els</title>
     <style>
         body { margin: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 0%, #3c5260, #121c2b 75%); }
-        canvas { display: block; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
         #info {
             position: absolute;
             top: 14px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 36px);
@@ -50,11 +50,18 @@
         // Posisi kamera isometric
         camera.position.set(35, 39 + officeExtension * .35, 48 + officeExtension);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const pixelScale = 0.58;
+        function resizePixelCanvas() {
+            renderer.setSize(Math.max(1, Math.round(window.innerWidth * pixelScale)), Math.max(1, Math.round(window.innerHeight * pixelScale)), false);
+            renderer.domElement.style.width = '100vw';
+            renderer.domElement.style.height = '100vh';
+            renderer.domElement.style.imageRendering = 'pixelated';
+        }
+        resizePixelCanvas();
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+        renderer.setPixelRatio(1);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.12;
@@ -314,7 +321,7 @@
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizePixelCanvas();
         });
     </script>
 </body>
