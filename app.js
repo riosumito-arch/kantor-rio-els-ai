@@ -1,7 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const SUPABASE_URL = 'https://abcdefghijklm.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (salin kunci panjang di sini)';
+const SUPABASE_URL = 'https://hmqeukhqwuujrkwnhxdp.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Yh97FpuxKJp8R4ARWhd2HQ_ZkUWEgQQ';
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 const $ = (id) => document.getElementById(id);
 const appState = { user: null, companyId: null, company: null, employees: [], sales: [], products: [], channels: [], units: [], activeEmployee: null, month: new Date(), messages: [] };
