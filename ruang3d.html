@@ -38,7 +38,8 @@
 
         const companyName = new URLSearchParams(location.search).get('company') || 'Kantor Rio.Els_AI';
         const staffCount = Math.max(1, Math.min(80, Number(new URLSearchParams(location.search).get('staff')) || 12));
-        const officeExtension = Math.max(0, Math.ceil(staffCount / 4) - 3) * 2.5;
+        const officeExtension = Math.max(0, Math.ceil(staffCount / 5) - 3) * 3.8;
+        const staffNames = (() => { try { const v=JSON.parse(new URLSearchParams(location.search).get('names')||'[]'); return Array.isArray(v)?v:[]; } catch { return []; } })();
         document.title = `${companyName} · Kantor 3D`;
 
         // 1. Setup Scene, Camera, Renderer
@@ -47,7 +48,7 @@
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         // Posisi kamera isometric
-        camera.position.set(27, 28 + officeExtension * .45, 34 + officeExtension);
+        camera.position.set(35, 39 + officeExtension * .35, 48 + officeExtension);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -61,11 +62,11 @@
 
         // 2. Kontrol Mouse
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0, officeExtension / 2);
+        controls.target.set(0, 0, 8 + officeExtension / 2);
         controls.enableDamping = true;
         controls.maxPolarAngle = Math.PI * 0.48;
         controls.minDistance = 22;
-        controls.maxDistance = 58 + officeExtension * 2;
+        controls.maxDistance = 90 + officeExtension * 2;
         controls.update();
 
         // 3. Pencahayaan
@@ -88,7 +89,7 @@
 
             // Daun Meja
             const topGeo = new THREE.BoxGeometry(4, 0.2, 2);
-        const topMat = new THREE.MeshStandardMaterial({ color: 0x62472f, roughness: .28, metalness: .12 });
+        const topMat = new THREE.MeshStandardMaterial({ color: 0x858b91, roughness: .34, metalness: .2 });
             const top = new THREE.Mesh(topGeo, topMat);
             top.position.y = 1.5;
             top.castShadow = true;
@@ -128,15 +129,20 @@
             return group;
         }
 
-        function createRoom(x, z, width, depth, color, title, subtitle) {
+        function createRoom(x, z, width, depth, color, title, subtitle, glassWalls = false) {
             const group = new THREE.Group();
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: .08 }));
             floor.rotation.x = -Math.PI / 2; floor.position.y = 0.035; floor.receiveShadow = true; group.add(floor);
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1eadb, roughness: 0.58 });
-            [[0, depth / 2, width, .16], [-width / 2, 0, .16, depth], [width / 2, 0, .16, depth]].forEach(([wx, wz, ww, wd]) => {
-                const wall = new THREE.Mesh(new THREE.BoxGeometry(ww, 1.65, wd), wallMat);
-                wall.position.set(wx, .82, wz); wall.castShadow = true; wall.receiveShadow = true; group.add(wall);
-            });
+            const wallMat = glassWalls ? new THREE.MeshPhysicalMaterial({ color:0xb6d6dc, roughness:.16, metalness:.08, transparent:true, opacity:.2, side:THREE.DoubleSide }) : new THREE.MeshStandardMaterial({ color:0xf1eadb, roughness:.58 });
+            const wallHeight=3.1;
+            [[0,depth/2,width,.16],[-width/2,0,.16,depth],[width/2,0,.16,depth]].forEach(([wx,wz,ww,wd])=>{const wall=new THREE.Mesh(new THREE.BoxGeometry(ww,wallHeight,wd),wallMat);wall.position.set(wx,wallHeight/2,wz);wall.castShadow=!glassWalls;wall.receiveShadow=true;group.add(wall)});
+            const frameMat=new THREE.MeshStandardMaterial({color:0xc8a65c,metalness:.72,roughness:.26});
+            const leafMat=glassWalls?new THREE.MeshPhysicalMaterial({color:0xc5e2e5,roughness:.12,transparent:true,opacity:.38,side:THREE.DoubleSide}):new THREE.MeshStandardMaterial({color:0x503824,roughness:.34});
+            const doorW=Math.min(2.15,width*.28),doorH=2.65,frontZ=-depth/2,sideW=(width-doorW)/2;
+            for(const side of [-1,1]){const seg=new THREE.Mesh(new THREE.BoxGeometry(sideW,wallHeight,.16),wallMat);seg.position.set(side*(doorW/2+sideW/2),wallHeight/2,frontZ);group.add(seg)}
+            for(const [fx,fy,fw,fh] of [[-doorW/2,.08,.09,doorH],[doorW/2,.08,.09,doorH],[0,doorH,doorW+.18,.1]]){const f=new THREE.Mesh(new THREE.BoxGeometry(fw,fh,.2),frameMat);f.position.set(fx,fy+fh/2,frontZ);group.add(f)}
+            const leaf=new THREE.Mesh(new THREE.BoxGeometry(doorW-.12,doorH-.1,.09),leafMat);leaf.position.set(0,doorH/2,frontZ+.08);group.add(leaf);
+            const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.42,10),frameMat);handle.position.set(doorW*.31,1.38,frontZ+.17);group.add(handle);
             const plaque = document.createElement('canvas'); plaque.width = 512; plaque.height = 128;
             const ctx = plaque.getContext('2d'); ctx.fillStyle = '#183149'; ctx.roundRect(0, 0, 512, 128, 20); ctx.fill();
             ctx.fillStyle = '#f1d48d'; ctx.font = '700 32px system-ui'; ctx.fillText(title, 22, 51);
@@ -169,19 +175,19 @@
             const glass = new THREE.MeshPhysicalMaterial({color:0x9fc6ce,roughness:.12,metalness:.12,transparent:true,opacity:.22,side:THREE.DoubleSide});
             const walnut = new THREE.MeshStandardMaterial({color:0x503824,roughness:.32});
             const cream = new THREE.MeshStandardMaterial({color:0xf0eadc,roughness:.26,metalness:.04});
-            const frontZ = 14.85 + officeExtension;
+            const frontZ = 39 + officeExtension;
             // Bronze framed glass frontage and a generous double door.
-            const pane = new THREE.Mesh(new THREE.BoxGeometry(29.5,3.45,.09),glass); pane.position.set(0,1.74,frontZ); scene.add(pane);
-            for(let x=-14.5;x<=14.5;x+=3.65){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,3.65,.2),brass);post.position.set(x,1.82,frontZ);post.castShadow=true;scene.add(post)}
-            const topRail=new THREE.Mesh(new THREE.BoxGeometry(29.6,.13,.23),brass);topRail.position.set(0,3.56,frontZ);scene.add(topRail);
-            const bottomRail=new THREE.Mesh(new THREE.BoxGeometry(29.6,.1,.23),brass);bottomRail.position.set(0,.12,frontZ);scene.add(bottomRail);
+            const pane = new THREE.Mesh(new THREE.BoxGeometry(39.5,3.45,.09),glass); pane.position.set(0,1.74,frontZ); scene.add(pane);
+            for(let x=-19.5;x<=19.5;x+=3.9){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,3.65,.2),brass);post.position.set(x,1.82,frontZ);post.castShadow=true;scene.add(post)}
+            const topRail=new THREE.Mesh(new THREE.BoxGeometry(39.6,.13,.23),brass);topRail.position.set(0,3.56,frontZ);scene.add(topRail);
+            const bottomRail=new THREE.Mesh(new THREE.BoxGeometry(39.6,.1,.23),brass);bottomRail.position.set(0,.12,frontZ);scene.add(bottomRail);
             for(const x of [-.67,.67]){const door=new THREE.Mesh(new THREE.BoxGeometry(1.28,3.2,.07),glass);door.position.set(x,1.72,frontZ-.11);scene.add(door);const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.62,12),brass);handle.position.set(x+(x<0?.48:-.48),1.55,frontZ-.19);scene.add(handle)}
             // Walnut-and-brass reception console just inside the entrance.
             const reception=new THREE.Mesh(new THREE.BoxGeometry(5.3,1.12,1.15),walnut);reception.position.set(0,.76,frontZ-2.55);reception.castShadow=true;scene.add(reception);
             const receptionTop=new THREE.Mesh(new THREE.BoxGeometry(5.48,.12,1.26),brass);receptionTop.position.set(0,1.36,frontZ-2.55);scene.add(receptionTop);
             const receptionFace=new THREE.Mesh(new THREE.BoxGeometry(4.8,.62,.04),cream);receptionFace.position.set(0,.78,frontZ-1.96);scene.add(receptionFace);
             // Gold inlay around the pale stone floor and a walnut feature wall in the CEO suite.
-            for(const [w,d,z] of [[29.2,.045,0],[.045,29.2,0]]){const trim=new THREE.Mesh(new THREE.BoxGeometry(w,.025,d),brass);trim.position.set(0,.075,z+officeExtension/2);scene.add(trim)}
+            for(const [w,d,z] of [[41.2,.045,0],[.045,54.2,0]]){const trim=new THREE.Mesh(new THREE.BoxGeometry(w,.025,d),brass);trim.position.set(0,.075,z+officeExtension/2);scene.add(trim)}
             const featureWall=new THREE.Mesh(new THREE.BoxGeometry(15.7,3.8,.22),walnut);featureWall.position.set(0,1.9,-14.2);scene.add(featureWall);
             for(let x=-7.3;x<=7.3;x+=.42){const slat=new THREE.Mesh(new THREE.BoxGeometry(.055,3.62,.09),brass);slat.position.set(x,1.9,-14.06);scene.add(slat)}
             // Recessed ceiling spots and a sculptural ring chandelier over the boardroom.
@@ -224,21 +230,21 @@
         // --- MENYUSUN RUANGAN ---
 
         // Lantai tunggal dengan enam ruang terpisah dan label yang terbaca.
-        const floorGeo = new THREE.PlaneGeometry(30, 30 + officeExtension);
+        const floorGeo = new THREE.PlaneGeometry(42, 55 + officeExtension);
         const floorMat = new THREE.MeshStandardMaterial({ color: 0xd9cfbc, side: THREE.DoubleSide, roughness: .29, metalness: .04 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = Math.PI / 2;
-        floor.position.z = officeExtension / 2;
+        floor.position.z = 10 + officeExtension / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
         // Enam area: CEO paling besar, Finance, HRD, rapat, workspace, dan lounge.
-        createRoom(0,-9.5,16,11,0x9d8059,'RUANG CEO','KANTOR EKSEKUTIF');
-        createRoom(11,-9.5,6,11,0xb9c7bd,'FINANCE','KEUANGAN');
-        createRoom(-11,-9.5,6,11,0xc8b5a2,'HRD','PEOPLE & CULTURE');
-        createRoom(0,.5+officeExtension/2,15,8+officeExtension,0xc9d5cc,'WORKSPACE KARYAWAN','OPEN OFFICE');
-        createRoom(9,9+officeExtension,12,11,0xc7d0d2,'RUANG RAPAT','20 KURSI');
-        createRoom(-10,9+officeExtension,8,11,0xc1d0bf,'LOUNGE','ISTIRAHAT & OBROLAN');
+        createRoom(0,-9.5,16,11,0x9d8059,'RUANG CEO','KANTOR EKSEKUTIF',false);
+        createRoom(11,-9.5,6,11,0xb9c7bd,'FINANCE','KEUANGAN',true);
+        createRoom(-11,-9.5,6,11,0xc8b5a2,'HRD','PEOPLE & CULTURE',true);
+        createRoom(0,8+officeExtension/2,30,24+officeExtension,0xc9d5cc,'WORKSPACE KARYAWAN','OPEN OFFICE · HINGGA 30 STAF',true);
+        createRoom(10,29+officeExtension,14,13,0xc7d0d2,'RUANG RAPAT','20 KURSI',true);
+        createRoom(-11,29+officeExtension,12,13,0xc1d0bf,'LOUNGE','ISTIRAHAT & OBROLAN',true);
         const brandCanvas=document.createElement('canvas');brandCanvas.width=900;brandCanvas.height=210;
         const brandCtx=brandCanvas.getContext('2d');brandCtx.fillStyle='#10233a';brandCtx.roundRect(0,0,900,210,28);brandCtx.fill();
         brandCtx.fillStyle='#d8b45b';brandCtx.beginPath();brandCtx.roundRect(28,28,154,154,28);brandCtx.fill();
@@ -257,25 +263,29 @@
         // Finance dan HRD.
         scene.add(createDesk(10,-10,0x3f7663)); createChair(10,-7.9,Math.PI,0x3f7663); addStaff(10,-7.6,0x284d47,1.1,'finance');
         scene.add(createDesk(-10,-10,0x9e7458)); createChair(-10,-7.9,Math.PI,0x9e7458); addStaff(-10,-7.6,0x67465a,2.2,'hrd');
-        // Satu meja dan kursi kerja formal untuk setiap karyawan aktif; ruang tumbuh ke satu sisi saat tim membesar.
-        const suitColors=[0x35566e,0x65577f,0x446b5a,0x795c4b,0x415675,0x805947,0x4b686c,0x66513e];
-        for(let i=0;i<staffCount;i++){const col=i%4,row=Math.floor(i/4),x=-5.1+col*3.4,z=-2.35+row*2.5;const desk=createDesk(x,z,0x4781a1);desk.scale.setScalar(.72);scene.add(desk);createChair(x,z+1.05,Math.PI,0x526b75);addStaff(x,z+.42,suitColors[i%suitColors.length],i*.61,'working')}
+        // Hingga 30 workstation pada ruang lapang, dengan sekat dan kursi kantor ergonomis.
+        const suitColors=[0x253c55,0x4b405f,0x315343,0x604538,0x35475d,0x714c3b,0x38565a,0x554532];
+        const partitionMat=new THREE.MeshStandardMaterial({color:0x68727a,roughness:.72,metalness:.12});
+        const partitionTrim=new THREE.MeshStandardMaterial({color:0xc8a65c,metalness:.68,roughness:.3});
+        function addWorkPartition(x,z){const back=new THREE.Mesh(new THREE.BoxGeometry(3.65,1.25,.12),partitionMat);back.position.set(x,2.05,z-.95);back.castShadow=true;scene.add(back);for(const side of [-1,1]){const wing=new THREE.Mesh(new THREE.BoxGeometry(.12,1.25,1.75),partitionMat);wing.position.set(x+side*1.78,2.05,z-.05);wing.castShadow=true;scene.add(wing)}const cap=new THREE.Mesh(new THREE.BoxGeometry(3.72,.055,.15),partitionTrim);cap.position.set(x,2.69,z-.95);scene.add(cap)}
+        function createOfficeChair(x,z,angle=0){const g=new THREE.Group(),upholstery=new THREE.MeshStandardMaterial({color:0x344653,roughness:.78}),metal=new THREE.MeshStandardMaterial({color:0x737c82,metalness:.62,roughness:.35});const seat=new THREE.Mesh(new THREE.BoxGeometry(.95,.2,.82),upholstery);seat.position.y=.78;g.add(seat);const back=new THREE.Mesh(new THREE.BoxGeometry(.92,1.15,.18),upholstery);back.position.set(0,1.38,-.34);g.add(back);for(const side of [-1,1]){const post=new THREE.Mesh(new THREE.BoxGeometry(.1,.36,.1),metal);post.position.set(side*.49,1.02,-.05);g.add(post);const arm=new THREE.Mesh(new THREE.BoxGeometry(.16,.1,.72),upholstery);arm.position.set(side*.49,1.2,.05);g.add(arm)}const stem=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,.5,12),metal);stem.position.y=.5;g.add(stem);const base=new THREE.Mesh(new THREE.CylinderGeometry(.12,.58,.1,5),metal);base.position.y=.23;g.add(base);for(let i=0;i<5;i++){const a=i/5*Math.PI*2,caster=new THREE.Mesh(new THREE.SphereGeometry(.11,8,8),metal);caster.position.set(Math.cos(a)*.49,.12,Math.sin(a)*.49);g.add(caster)}g.position.set(x,0,z);g.rotation.y=angle;scene.add(g);return g}
+        for(let i=0;i<staffCount;i++){const col=i%5,row=Math.floor(i/5),x=-10.6+col*5.3,z=-1.8+row*3.8;addWorkPartition(x,z);const desk=createDesk(x,z,0x4781a1);desk.scale.set(.98,1,1.06);scene.add(desk);createOfficeChair(x,z+1.18,Math.PI);addStaff(x,z+.48,suitColors[i%suitColors.length],i*.61,'working');const plate=document.createElement('canvas');plate.width=720;plate.height=150;const pctx=plate.getContext('2d');pctx.fillStyle='#132638';pctx.beginPath();pctx.roundRect(4,4,712,142,26);pctx.fill();pctx.strokeStyle='#c8a65c';pctx.lineWidth=6;pctx.stroke();const label=(staffNames[i]||'Karyawan '+String(i+1).padStart(2,'0')).trim().slice(0,48);let font=42;do{pctx.font='700 '+font+'px system-ui';if(pctx.measureText(label).width<=670)break;font-=2}while(font>22);pctx.fillStyle='#fff7e6';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(label,360,78);const tag=new THREE.Mesh(new THREE.PlaneGeometry(2.55,.53),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(plate),transparent:true,side:THREE.DoubleSide}));tag.position.set(x,3.25,z+.54);scene.add(tag)}
         createPlant(-8,2.5,.7); createPlant(8,2.5,.7);
         // Meja konferensi dan tepat 20 kursi.
-        const conferenceZ=9+officeExtension;
+        const conferenceZ=29+officeExtension;
         const conferenceTop=new THREE.Mesh(new THREE.CylinderGeometry(2.15,2.15,.3,32),new THREE.MeshStandardMaterial({color:0x795f48,roughness:.62}));conferenceTop.position.set(9,1.45,conferenceZ);conferenceTop.castShadow=true;scene.add(conferenceTop);
         const conferenceLeg=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,1.4,12),new THREE.MeshStandardMaterial({color:0x4b514d}));conferenceLeg.position.set(9,.7,conferenceZ);scene.add(conferenceLeg);
         for(let i=0;i<20;i++){const a=i/20*Math.PI*2;createChair(9+Math.cos(a)*3.25,conferenceZ+Math.sin(a)*3.0, -a+Math.PI/2,0x526b75)}
         addStaff(7.6,conferenceZ,0x405b70,.7,'meeting'); addStaff(10.4,conferenceZ,0x6f5a68,1.8,'meeting');
         // Lounge santai dengan sofa, meja kopi, dan tanaman.
         const sofaMat=new THREE.MeshStandardMaterial({color:0x4c7567,roughness:.86});
-        const loungeZ=9+officeExtension;
+        const loungeZ=29+officeExtension;
         const sofaBase=new THREE.Mesh(new THREE.BoxGeometry(4.8,.65,1.5),sofaMat);sofaBase.position.set(-10,.65,loungeZ);sofaBase.castShadow=true;scene.add(sofaBase);
         const sofaBack=new THREE.Mesh(new THREE.BoxGeometry(4.8,1.1,.35),sofaMat);sofaBack.position.set(-10,1.35,loungeZ-.55);sofaBack.castShadow=true;scene.add(sofaBack);
         const coffee=new THREE.Mesh(new THREE.BoxGeometry(2.5,.18,1.4),new THREE.MeshStandardMaterial({color:0xa37c53}));coffee.position.set(-10,.65,loungeZ+2.3);scene.add(coffee);
         addStaff(-10,loungeZ+3.1,0x58644c,2.8,'break');createPlant(-13,5+officeExtension,.75);createPlant(-7,5+officeExtension,.75);
         addLuxuryArchitecture();
-        document.getElementById('info').textContent=`${companyName.toUpperCase()} · 1 LANTAI · ${staffCount} MEJA & KURSI KARYAWAN · 20 KURSI RAPAT — Seret untuk memutar, gulir untuk zoom`;
+        document.getElementById('info').textContent=`${companyName.toUpperCase()} · 1 LANTAI · ${staffCount} WORKSTATION · RUANG STAF HINGGA 30 ORANG · DINDING KACA — Seret untuk memutar, gulir untuk zoom`;
 
 
         // --- ANIMASI (Looping) ---
