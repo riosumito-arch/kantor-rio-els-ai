@@ -276,7 +276,23 @@
         const partitionTrim=new THREE.MeshStandardMaterial({color:0xc8a65c,metalness:.68,roughness:.3});
         function addWorkPartition(x,z){const back=new THREE.Mesh(new THREE.BoxGeometry(3.65,1.25,.12),partitionMat);back.position.set(x,2.05,z-.95);back.castShadow=true;scene.add(back);for(const side of [-1,1]){const wing=new THREE.Mesh(new THREE.BoxGeometry(.12,1.25,1.75),partitionMat);wing.position.set(x+side*1.78,2.05,z-.05);wing.castShadow=true;scene.add(wing)}const cap=new THREE.Mesh(new THREE.BoxGeometry(3.72,.055,.15),partitionTrim);cap.position.set(x,2.69,z-.95);scene.add(cap)}
         function createOfficeChair(x,z,angle=0){const g=new THREE.Group(),upholstery=new THREE.MeshStandardMaterial({color:0x344653,roughness:.78}),metal=new THREE.MeshStandardMaterial({color:0x737c82,metalness:.62,roughness:.35});const seat=new THREE.Mesh(new THREE.BoxGeometry(.95,.2,.82),upholstery);seat.position.y=.78;g.add(seat);const back=new THREE.Mesh(new THREE.BoxGeometry(.92,1.15,.18),upholstery);back.position.set(0,1.38,-.34);g.add(back);for(const side of [-1,1]){const post=new THREE.Mesh(new THREE.BoxGeometry(.1,.36,.1),metal);post.position.set(side*.49,1.02,-.05);g.add(post);const arm=new THREE.Mesh(new THREE.BoxGeometry(.16,.1,.72),upholstery);arm.position.set(side*.49,1.2,.05);g.add(arm)}const stem=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,.5,12),metal);stem.position.y=.5;g.add(stem);const base=new THREE.Mesh(new THREE.CylinderGeometry(.12,.58,.1,5),metal);base.position.y=.23;g.add(base);for(let i=0;i<5;i++){const a=i/5*Math.PI*2,caster=new THREE.Mesh(new THREE.SphereGeometry(.11,8,8),metal);caster.position.set(Math.cos(a)*.49,.12,Math.sin(a)*.49);g.add(caster)}g.position.set(x,0,z);g.rotation.y=angle;scene.add(g);return g}
-        for(let i=0;i<staffCount;i++){const col=i%5,row=Math.floor(i/5),x=-10.6+col*5.3,z=-1.8+row*3.8;addWorkPartition(x,z);const desk=createDesk(x,z,0x4781a1);desk.scale.set(.98,1,1.06);scene.add(desk);createOfficeChair(x,z+1.18,Math.PI);addStaff(x,z+.48,suitColors[i%suitColors.length],i*.61,'working');const plate=document.createElement('canvas');plate.width=720;plate.height=150;const pctx=plate.getContext('2d');pctx.fillStyle='#132638';pctx.beginPath();pctx.roundRect(4,4,712,142,26);pctx.fill();pctx.strokeStyle='#c8a65c';pctx.lineWidth=6;pctx.stroke();const label=(staffNames[i]||'Karyawan '+String(i+1).padStart(2,'0')).trim().slice(0,48);let font=42;do{pctx.font='700 '+font+'px system-ui';if(pctx.measureText(label).width<=670)break;font-=2}while(font>22);pctx.fillStyle='#fff7e6';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(label,360,78);const tag=new THREE.Mesh(new THREE.PlaneGeometry(2.55,.53),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(plate),transparent:true,side:THREE.DoubleSide}));tag.position.set(x,3.25,z+.54);scene.add(tag)}
+        const podCentersX=[-9.5,0,9.5], podCentersZ=[2,14+officeExtension*.4];
+        const podOffsets=[[-1.65,-3.2],[1.65,-3.2],[-1.65,0],[1.65,0],[-1.65,3.2]];
+        for(let i=0;i<staffCount;i++){
+            const pod=Math.floor(i/5),seat=i%5,podCol=pod%3,podRow=Math.floor(pod/3);
+            const x=podCentersX[podCol]+podOffsets[seat][0],z=podCentersZ[podRow]+podOffsets[seat][1];
+            addWorkPartition(x,z);
+            const desk=createDesk(x,z,0x4781a1);desk.scale.set(.75,1,.9);scene.add(desk);
+            createOfficeChair(x,z+1.1,Math.PI);
+            addStaff(x,z+.48,suitColors[i%suitColors.length],i*.61,'working');
+            const plate=document.createElement('canvas');plate.width=720;plate.height=150;const pctx=plate.getContext('2d');
+            pctx.fillStyle='#132638';pctx.beginPath();pctx.roundRect(4,4,712,142,26);pctx.fill();pctx.strokeStyle='#c8a65c';pctx.lineWidth=6;pctx.stroke();
+            const label=(staffNames[i]||'Karyawan '+String(i+1).padStart(2,'0')).trim().slice(0,48);let font=42;
+            do{pctx.font='700 '+font+'px system-ui';if(pctx.measureText(label).width<=670)break;font-=2}while(font>22);
+            pctx.fillStyle='#fff7e6';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(label,360,78);
+            const tag=new THREE.Mesh(new THREE.PlaneGeometry(2.55,.53),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(plate),transparent:true,side:THREE.DoubleSide}));
+            tag.position.set(x,3.25,z+.54);scene.add(tag);
+        }
         createPlant(-8,2.5,.7); createPlant(8,2.5,.7);
         // Meja konferensi dan tepat 20 kursi.
         const conferenceZ=29+officeExtension;
