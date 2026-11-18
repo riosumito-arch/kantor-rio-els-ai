@@ -1,8 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Ganti teks di dalam tanda kutip ini dengan URL dan Key dari proyek Supabase Anda yang benar:
-const SUPABASE_URL = 'https://[ID_PROYEK_YANG_BENAR].supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'KUNCI_API_ANON_YANG_BENAR';
+const SUPABASE_URL = 'https://abcdefghijklm.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (salin kunci panjang di sini)';
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 const $ = (id) => document.getElementById(id);
 const appState = { user: null, companyId: null, company: null, employees: [], sales: [], products: [], channels: [], units: [], activeEmployee: null, month: new Date(), messages: [] };
