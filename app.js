@@ -33,7 +33,7 @@ async function requestLogin(e) {
   e.preventDefault(); const email=$('email').value.trim(); const password=$('password').value; const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Memeriksa…';
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   btn.disabled=false; btn.textContent='Masuk';
-  if(error) $('loginNotice').textContent='Login gagal. Periksa email/kata sandi, atau pilih “Lupa / atur kata sandi” jika ini pertama kali.';
+  if(error){const message=(error.message||'').toLowerCase();$('loginNotice').textContent=message.includes('invalid login credentials')?'Email atau kata sandi salah. Jika belum pernah membuat kata sandi, gunakan “Lupa / atur kata sandi”.':message.includes('email not confirmed')?'Email belum dikonfirmasi. Periksa email kantor atau minta bantuan pemilik kantor.':message.includes('too many requests')?'Terlalu banyak percobaan. Tunggu sebentar sebelum mencoba kembali.':'Login gagal: '+error.message;}
 }
 async function requestPasswordReset() {
   const email=$('email').value.trim(); if(!email){$('loginNotice').textContent='Masukkan email kantor terlebih dahulu.'; $('email').focus(); return}
