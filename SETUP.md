@@ -19,3 +19,18 @@
 4. Atur secrets Supabase Functions: `APP_ORIGIN`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `ANTHROPIC_API_KEY`, dan `ANTHROPIC_MODEL`. Gunakan key server-side; jangan memasukkannya ke berkas web.
 5. Pastikan URL situs tercantum di **Supabase Auth → URL Configuration → Redirect URLs** agar tautan login kembali ke web.
 6. Terbitkan isi folder ini ke Cloudflare Pages.
+
+
+## Login email and password
+
+- Website login now uses email and password so normal sign-ins do not send an email each time. Existing accounts need one password reset the first time.
+- Supabase built-in email is limited to 2 messages per hour for the entire project. Configure a custom SMTP sender before resetting passwords or inviting more members, then set the Auth email rate limit to a value your email provider supports. Do not disable email confirmation to bypass the limit.
+- In Supabase **Authentication → SMTP Settings**, configure sender address, SMTP host, port, username, and password. Keep SMTP credentials in Supabase, not in this repository.
+- In **Authentication → URL Configuration**, set the production Site URL and add the production URL plus the active Cloudflare Pages preview under Redirect URLs. Replace the preview entry with the owned `.com` domain after it is connected.
+
+## Remaining external setup
+
+- Apply both migrations in order and deploy `employee-chat` and `manage-company-access`.
+- Set the listed AI provider secrets in Supabase Edge Function secrets.
+- Connect the owned `.com` domain to Cloudflare Pages. The preview address is not the final company address.
+- Marketplace entries are links with copy/paste support. Automatic shop/account connections require a separate official API/OAuth integration and credentials for each platform.
