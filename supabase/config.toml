@@ -1,0 +1,10 @@
+project_id = "kantor-rio-els-ai"
+
+[functions.employee-chat]
+verify_jwt = true
+
+[functions.manage-company-access]
+verify_jwt = true
+
+[functions.lynk-webhook]
+verify_jwt = false
