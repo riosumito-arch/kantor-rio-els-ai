@@ -4,7 +4,7 @@
 
 - Beranda menampilkan scene kantor 3D satu lantai. Meja dan kursi workspace bertambah mengikuti jumlah karyawan aktif; figur karyawan memakai jas dan bergerak ringan saat bekerja.
 - Logo, nama kantor, dan wallpaper dapat diubah dari **Pengaturan kantor**.
-- Login web memakai tautan masuk yang dikirim ke email terdaftar. Akses aplikasi dibatasi untuk anggota kantor yang aktif.
+- Login web memakai email dan kata sandi agar dapat masuk berulang tanpa mengirim email setiap kali. Pengaturan kata sandi pertama memerlukan email reset. Akses aplikasi dibatasi untuk anggota kantor yang aktif.
 - Menu **Tim & HRD** menyimpan job desk dan pilihan tool per karyawan.
 - Pilihan tool adalah Claude AI, OpenAI API, dan ChatGPT melalui OpenAI API. Pilihan ChatGPT memakai `OPENAI_API_KEY`; langganan ChatGPT saja tidak menyediakan akses API.
 - Canva tersedia di menu **Platform & unduhan** sebagai tool desain, dengan tautan resmi yang dapat dibuka atau disalin. Canva tidak dijalankan sebagai model AI karyawan.
