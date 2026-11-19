@@ -276,7 +276,7 @@
             [-.19,.19].forEach(lx=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(.2,.62,.24),suit);leg.position.set(lx,.36,0);leg.castShadow=true;group.add(leg);const shoe=new THREE.Mesh(new THREE.BoxGeometry(.22,.11,.32),dark);shoe.position.set(lx,.075,.08);group.add(shoe);legs.push(leg)});
             const arms=[];
             [-1,1].forEach(side=>{const pivot=new THREE.Group();pivot.position.set(side*.39,1.39,.02);const arm=new THREE.Mesh(new THREE.BoxGeometry(.2,.62,.23),suit);arm.position.y=-.29;arm.rotation.z=side*-.11;arm.castShadow=true;pivot.add(arm);const cuff=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.24),shirt);cuff.position.set(0,-.56,.006);pivot.add(cuff);const hand=new THREE.Mesh(new THREE.BoxGeometry(.17,.15,.18),skin);hand.position.set(0,-.66,.025);pivot.add(hand);group.add(pivot);arms.push(pivot)});
-            group.userData={arms,legs,baseY:0};
+            group.userData={arms,legs,head,torso,baseX:x,baseZ:z,baseY:0};
             group.position.set(x, 0, z);
             return group;
         }
@@ -403,12 +403,12 @@
         const logoImage=new Image();
         logoImage.onload=()=>{
             const logoCanvas=document.createElement('canvas');logoCanvas.width=900;logoCanvas.height=600;
-            const logoCtx=logoCanvas.getContext('2d',{willReadFrequently:true});logoCtx.fillStyle='#dcebf5';logoCtx.fillRect(0,0,900,600);logoCtx.drawImage(logoImage,0,0,900,600);
-            const pixels=logoCtx.getImageData(0,0,900,600);for(let p=0;p<pixels.data.length;p+=4){const l=(pixels.data[p]*299+pixels.data[p+1]*587+pixels.data[p+2]*114)/1000;if(l<44){pixels.data[p+3]=Math.round(Math.max(0,(l-7)/(44-7))*pixels.data[p+3])}}logoCtx.putImageData(pixels,0,0);
+            const logoCtx=logoCanvas.getContext('2d');logoCtx.fillStyle='#dcebf5';logoCtx.fillRect(0,0,900,600);logoCtx.drawImage(logoImage,0,0,900,600);
             const logoTexture=new THREE.CanvasTexture(logoCanvas);logoTexture.colorSpace=THREE.SRGBColorSpace;
-            const plaque=new THREE.Mesh(new THREE.PlaneGeometry(6.1,4.05),new THREE.MeshBasicMaterial({map:logoTexture,side:THREE.DoubleSide}));plaque.position.set(0,2.25,-19.55);scene.add(plaque);
+            const plaque=new THREE.Mesh(new THREE.PlaneGeometry(3.1,2.05),new THREE.MeshBasicMaterial({map:logoTexture,side:THREE.DoubleSide}));plaque.position.set(-8.2,2.45,-19.53);scene.add(plaque);
         };
-        logoImage.src='./brand-logo-source.jpeg';
+        logoImage.onerror=()=>console.warn('Logo kantor tidak dapat dimuat dari brand-logo-blue.png');
+        logoImage.src='./brand-logo-blue.png';
         document.getElementById('info').textContent=`${companyName.toUpperCase()} · RUANG KERJA ${workspaceCapacity} KURSI · ${staffCount} STAF SAAT INI · CEO, FINANCE, HRD, ARSIP & LOUNGE — Seret untuk memutar, gulir untuk zoom`;
 
 
@@ -420,12 +420,40 @@
             const time = clock.getElapsedTime();
 
             characters.forEach(({person,phase,role})=>{
-                person.position.y=Math.sin(time*2+phase)*.025;
-                person.userData.arms.forEach((arm,index)=>{
-                    const motion=role==='working'?.22:role==='meeting'?.11:role==='break'?.06:.09;
-                    arm.rotation.x=Math.sin(time*2.7+phase+index*.8)*motion;
-                });
-                person.userData.legs.forEach((leg,index)=>{leg.rotation.z=Math.sin(time*2+phase+index)*.025});
+                const {arms,legs,head,torso,baseX,baseZ}=person.userData;
+                const beat=time*7.5+phase;
+                if(role==='working'){
+                    // Reach toward the desktop and type in a clear, repeating rhythm.
+                    person.position.y=Math.sin(time*2.1+phase)*.012;
+                    arms.forEach((arm,index)=>{
+                        arm.rotation.x=-.82+Math.sin(beat+index*Math.PI)*.24;
+                        arm.rotation.z=(index===0?-.08:.08)+Math.sin(beat*.5+index)*.06;
+                    });
+                    head.rotation.x=-.12+Math.sin(time*1.4+phase)*.06;
+                    torso.rotation.x=-.035+Math.sin(time*1.8+phase)*.018;
+                    legs.forEach(leg=>{leg.rotation.z=0});
+                } else if(role==='meeting') {
+                    person.position.y=Math.sin(time*1.4+phase)*.025;
+                    arms.forEach((arm,index)=>{arm.rotation.x=-.34+Math.sin(time*2.4+phase+index*2)*.28;arm.rotation.z=Math.sin(time*1.7+phase+index)*.12});
+                    head.rotation.y=Math.sin(time*1.1+phase)*.16;
+                    torso.rotation.x=Math.sin(time*1.4+phase)*.025;
+                } else if(role==='break') {
+                    person.position.y=Math.sin(time*1.25+phase)*.035;
+                    arms.forEach((arm,index)=>{arm.rotation.x=-.12+Math.sin(time*1.8+phase+index)*.1;arm.rotation.z=Math.sin(time+phase+index)*.06});
+                    head.rotation.y=Math.sin(time*.8+phase)*.2;
+                    torso.rotation.x=Math.sin(time+phase)*.025;
+                } else if(role==='moving') {
+                    person.position.y=Math.abs(Math.sin(time*5+phase))*.1;
+                    person.position.x=baseX+Math.sin(time*2.2+phase)*.18;
+                    person.position.z=baseZ+Math.cos(time*2.2+phase)*.1;
+                    arms.forEach((arm,index)=>{arm.rotation.x=Math.sin(time*5+phase+index*Math.PI)*.48;arm.rotation.z=(index===0?-.08:.08)});
+                    legs.forEach((leg,index)=>{leg.rotation.x=Math.sin(time*5+phase+index*Math.PI)*.42});
+                    head.rotation.y=Math.sin(time*1.7+phase)*.1;
+                } else {
+                    person.position.y=Math.sin(time*1.5+phase)*.012;
+                    arms.forEach((arm,index)=>{arm.rotation.x=-.12+Math.sin(time*1.8+phase+index)*.08});
+                    head.rotation.x=Math.sin(time+phase)*.04;
+                }
             });
 
             controls.update();
