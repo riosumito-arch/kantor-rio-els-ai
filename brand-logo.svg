@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Logo Kantor Rio Els AI">
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f4d889"/>
+      <stop offset="1" stop-color="#b5883c"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="29" fill="#13243b"/>
+  <path d="M30 96V32h35c18 0 29 9 29 25 0 11-6 19-16 23l19 16H73L57 82h-8v14H30zm19-30h15c7 0 11-3 11-9s-4-9-11-9H49v18z" fill="url(#gold)"/>
+  <path d="M20 109h88" stroke="#f3e5c3" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+</svg>

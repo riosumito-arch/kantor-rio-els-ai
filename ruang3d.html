@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kantor AI 3D - Rio.Els</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a2e; }
+        body { margin: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 0%, #e7e3db, #aab3b2 78%); }
         canvas { display: block; }
         #info {
             position: absolute;
-            top: 10px; width: 100%;
+            top: 14px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 36px);
             text-align: center;
-            color: white;
-            font-family: sans-serif;
+            color: #f8f1df;
+            background: linear-gradient(135deg,#172b32ed,#243b40e8); border: 1px solid #c8a65c; border-radius: 14px; padding: 11px 18px;
+            font: 700 13px/1.5 system-ui, sans-serif; letter-spacing: .03em;
+            box-shadow: 0 10px 34px #07101c88, inset 0 1px #ffffff18;
             pointer-events: none;
         }
     </style>
@@ -34,31 +36,55 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        const params = new URLSearchParams(location.search);
+        const companyName = params.get('company') || 'Kantor Rio.Els_AI';
+        let teamRoster = [];
+        try { teamRoster = JSON.parse(params.get('team') || '[]'); if (!Array.isArray(teamRoster)) teamRoster = []; } catch { teamRoster = []; }
+        const requestedStaffCount = params.has('team') ? teamRoster.length : (Number(params.get('staff')) || 12);
+        const staffCount = Math.max(0, Math.min(80, requestedStaffCount));
+        const podCount = Math.ceil(staffCount / 4);
+        const workstationRows = Math.max(2, Math.ceil(podCount / 4));
+        const workspaceCapacity = workstationRows * 16;
+        const officeExtension = Math.max(0, workstationRows - 2) * 10;
+        document.title = `${companyName} · Kantor 3D`;
+
         // 1. Setup Scene, Camera, Renderer
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a2e); // Warna background gelap
+        scene.background = new THREE.Color(0xd8ddda);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         // Posisi kamera isometric
-        camera.position.set(20, 20, 20); 
+        camera.position.set(39, 36 + officeExtension * .48, 47 + officeExtension);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Aktifkan bayangan
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.12;
         document.body.appendChild(renderer.domElement);
 
         // 2. Kontrol Mouse
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0, 0);
+        controls.target.set(0, 0, 1 + officeExtension / 2);
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI * 0.48;
+        controls.minDistance = 22;
+        controls.maxDistance = 76 + officeExtension * 2;
         controls.update();
 
         // 3. Pencahayaan
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.HemisphereLight(0xfff5df, 0x6e7773, 2.15);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(10, 20, 10);
+        const dirLight = new THREE.DirectionalLight(0xffe0ae, 3.2);
+        dirLight.position.set(-14, 27, -11);
         dirLight.castShadow = true;
+        dirLight.shadow.mapSize.set(2048, 2048);
+        dirLight.shadow.camera.left = -32; dirLight.shadow.camera.right = 32;
+        dirLight.shadow.camera.top = 36; dirLight.shadow.camera.bottom = -30;
         scene.add(dirLight);
 
         // --- FUNGSI MEMBUAT OBJEK 3D ---
@@ -69,7 +95,7 @@
 
             // Daun Meja
             const topGeo = new THREE.BoxGeometry(4, 0.2, 2);
-            const topMat = new THREE.MeshStandardMaterial({ color: 0xdfe6e9 });
+            const topMat = new THREE.MeshStandardMaterial({ color: color ?? 0x777f86, roughness: .3, metalness: .16 });
             const top = new THREE.Mesh(topGeo, topMat);
             top.position.y = 1.5;
             top.castShadow = true;
@@ -78,7 +104,7 @@
 
             // Kaki Meja
             const legGeo = new THREE.BoxGeometry(0.2, 1.5, 0.2);
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x636e72 });
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x303b3d, metalness: .48, roughness: .34 });
             const legPositions = [
                 [-1.8, 0.75, -0.8], [1.8, 0.75, -0.8],
                 [-1.8, 0.75, 0.8], [1.8, 0.75, 0.8]
@@ -91,8 +117,8 @@
             });
 
             // Monitor
-            const monitorGeo = new THREE.BoxGeometry(1.2, 0.8, 0.1);
-            const monitorMat = new THREE.MeshStandardMaterial({ color: 0x2d3436 });
+            const monitorGeo = new THREE.BoxGeometry(1.2, 0.8, 0.12);
+            const monitorMat = new THREE.MeshStandardMaterial({ color: 0x202b2e, metalness: .32, roughness: .3 });
             const monitor = new THREE.Mesh(monitorGeo, monitorMat);
             monitor.position.set(0, 2, -0.5);
             monitor.castShadow = true;
@@ -100,87 +126,290 @@
 
             // Layar Monitor (Nyala)
             const screenGeo = new THREE.PlaneGeometry(1, 0.6);
-            const screenMat = new THREE.MeshBasicMaterial({ color: color }); // Warna sesuai divisi
+            const screenMat = new THREE.MeshBasicMaterial({ color: 0x93d9d2 });
             const screen = new THREE.Mesh(screenGeo, screenMat);
             screen.position.set(0, 2, -0.44);
             group.add(screen);
+
+            // Keyboard, mouse, and a small warm desk accessory make each station feel lived in.
+            const keyboard = new THREE.Mesh(new THREE.BoxGeometry(.82,.055,.25), new THREE.MeshStandardMaterial({color:0x273236,roughness:.55}));
+            keyboard.position.set(0,.14,.42); group.add(keyboard);
+            const mouse = new THREE.Mesh(new THREE.BoxGeometry(.13,.075,.19), new THREE.MeshStandardMaterial({color:0xd9d1c2,roughness:.55}));
+            mouse.position.set(.58,.16,.42); group.add(mouse);
+            const deskPlant = new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.2,8), new THREE.MeshStandardMaterial({color:0x758c69,roughness:.8}));
+            deskPlant.position.set(-1.45,.2,.55); group.add(deskPlant);
 
             group.position.set(x, 0, z);
             return group;
         }
 
-        // Fungsi membuat Karakter Sederhana
+        function createRoom(x, z, width, depth, color, title, subtitle) {
+            const group = new THREE.Group();
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: .08 }));
+            floor.rotation.x = -Math.PI / 2; floor.position.y = 0.035; floor.receiveShadow = true; group.add(floor);
+            const isCeo = title.includes('CEO');
+            const wallMat = new THREE.MeshPhysicalMaterial({ color: isCeo ? 0xb8c9c7 : 0xcbd8d4, roughness: .2, metalness: .08, transparent: true, opacity: isCeo ? .3 : .2, side: THREE.DoubleSide, depthWrite: false });
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0xb99a5e, metalness: .72, roughness: .25 });
+            [[0, depth / 2, width, .16], [-width / 2, 0, .16, depth], [width / 2, 0, .16, depth]].forEach(([wx, wz, ww, wd]) => {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(ww, isCeo ? 2.65 : 2.25, wd), wallMat);
+                wall.position.set(wx, isCeo ? 1.33 : 1.12, wz); wall.castShadow = isCeo; wall.receiveShadow = true; group.add(wall);
+                if (!isCeo) {
+                    const topRail = new THREE.Mesh(new THREE.BoxGeometry(ww, .08, wd + .04), frameMat);
+                    topRail.position.set(wx, 2.25, wz); group.add(topRail);
+                    const leftPost = new THREE.Mesh(new THREE.BoxGeometry(.07, 2.25, .12), frameMat);
+                    leftPost.position.set(wx - ww / 2, 1.12, wz); group.add(leftPost);
+                    const rightPost = leftPost.clone(); rightPost.position.x = wx + ww / 2; group.add(rightPost);
+                }
+            });
+            const plaque = document.createElement('canvas'); plaque.width = 512; plaque.height = 128;
+            const ctx = plaque.getContext('2d'); ctx.fillStyle = '#183149'; ctx.roundRect(0, 0, 512, 128, 20); ctx.fill();
+            ctx.fillStyle = '#f1d48d'; ctx.font = '700 32px system-ui'; ctx.fillText(title, 22, 51);
+            ctx.fillStyle = '#e7edf0'; ctx.font = '500 21px system-ui'; ctx.fillText(subtitle, 22, 91);
+            const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(width - .5, 7), 1.75), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(plaque), transparent: true, side: THREE.DoubleSide }));
+            sign.position.set(0, 2.75, depth / 2 - .08); group.add(sign);
+            group.position.set(x, 0, z); scene.add(group); return group;
+        }
+
+        function createChair(x, z, angle = 0, color = 0x576e75) {
+            const chair = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color, roughness: .68 });
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(.72, .16, .68), mat); seat.position.y = .72; seat.castShadow = true; chair.add(seat);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(.72, .86, .12), mat); back.position.set(0, 1.16, -.3); back.castShadow = true; chair.add(back);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x39474d, metalness: .35, roughness: .5 });
+            [[-.27,.36,-.23],[.27,.36,-.23],[-.27,.36,.23],[.27,.36,.23]].forEach(p=>{const leg=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.72,8),legMat);leg.position.set(...p);chair.add(leg)});
+            chair.position.set(x, 0, z); chair.rotation.y = angle; scene.add(chair); return chair;
+        }
+
+        function createPlanter(x, z, width = 2.6, depth = 1.05, scale = 1) {
+            const planter = new THREE.Group();
+            const stone = new THREE.Mesh(new THREE.BoxGeometry(width,.62,depth),new THREE.MeshStandardMaterial({color:0xd5d0c4,roughness:.66}));
+            stone.position.y=.34; stone.castShadow=true; stone.receiveShadow=true; planter.add(stone);
+            const soil = new THREE.Mesh(new THREE.BoxGeometry(width-.18,.12,depth-.18),new THREE.MeshStandardMaterial({color:0x44392d,roughness:1}));
+            soil.position.y=.7; planter.add(soil);
+            const leafMat=[0x3e725b,0x5d8c68,0x78996d,0x2f5e4d].map(color=>new THREE.MeshStandardMaterial({color,roughness:.82}));
+            const count=Math.max(4,Math.round(width*2.5));
+            for(let i=0;i<count;i++){
+                const px=-width*.42+(i/(count-1))*width*.84, pz=(i%2?-.18:.18)*(depth*.55);
+                const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.52,6),leafMat[i%leafMat.length]);
+                stem.position.set(px,.98,pz); planter.add(stem);
+                for(let j=0;j<3;j++){
+                    const leaf=new THREE.Mesh(new THREE.BoxGeometry(.16,.54,.12),leafMat[(i+j+1)%leafMat.length]);
+                    leaf.position.set(px+(j-1)*.11,1.15+j%2*.08,pz+(j-1)*.07); leaf.rotation.z=(j-1)*.46; leaf.rotation.x=(j-1)*.24; planter.add(leaf);
+                }
+            }
+            planter.position.set(x,0,z); planter.scale.setScalar(scale); scene.add(planter); return planter;
+        }
+
+        function createPlant(x, z, scale = 1) {
+            const plant = new THREE.Group();
+            const pot = new THREE.Mesh(new THREE.CylinderGeometry(.38,.48,.65,12), new THREE.MeshStandardMaterial({color:0xd6d0c4,roughness:.68})); pot.position.y=.33; pot.castShadow=true; plant.add(pot);
+            for(let i=0;i<7;i++){const leaf=new THREE.Mesh(new THREE.ConeGeometry(.18,1.35,7),new THREE.MeshStandardMaterial({color:i%2?0x397652:0x6e9b6b,roughness:.8}));const a=i/7*Math.PI*2;leaf.position.set(Math.cos(a)*.23,1.15+Math.random()*.22,Math.sin(a)*.23);leaf.rotation.z=Math.cos(a)*.28;leaf.rotation.x=Math.sin(a)*.28;plant.add(leaf)}
+            plant.position.set(x,0,z); plant.scale.setScalar(scale); scene.add(plant); return plant;
+        }
+
+        // Architectural shell: bright stone, walnut feature wall, brass trim, and light glass.
+        function addLuxuryArchitecture() {
+            const brass = new THREE.MeshStandardMaterial({color:0xc8a65c,metalness:.82,roughness:.2});
+            const glass = new THREE.MeshPhysicalMaterial({color:0xc8d6d4,roughness:.18,metalness:.08,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false});
+            const walnut = new THREE.MeshStandardMaterial({color:0x49362b,roughness:.4});
+            const cream = new THREE.MeshStandardMaterial({color:0xe9e7df,roughness:.35});
+            const frontZ = 22 + officeExtension;
+            // Glass frontage is mostly open at the entrance; it frames the office without enclosing it.
+            for (const x of [-27,27]) {
+                const pane = new THREE.Mesh(new THREE.BoxGeometry(.09,3.2,frontZ+18),glass);
+                pane.position.set(x,1.62,(frontZ-18)/2); scene.add(pane);
+                for(let z=-18;z<=frontZ;z+=5){const post=new THREE.Mesh(new THREE.BoxGeometry(.16,3.35,.16),brass);post.position.set(x,1.67,z);scene.add(post)}
+            }
+            const rearWall=new THREE.Mesh(new THREE.BoxGeometry(54,4.4,.32),walnut); rearWall.position.set(0,2.2,-20); rearWall.castShadow=true;scene.add(rearWall);
+            for(let x=-26;x<=26;x+=.48){const slat=new THREE.Mesh(new THREE.BoxGeometry(.045,4.18,.08),brass);slat.position.set(x,2.18,-19.79);scene.add(slat)}
+            const brandCanvas=document.createElement('canvas');brandCanvas.width=900;brandCanvas.height=210;
+            const brandCtx=brandCanvas.getContext('2d');brandCtx.fillStyle='#f2eee5';brandCtx.roundRect(0,0,900,210,24);brandCtx.fill();
+            brandCtx.fillStyle='#b99b59';brandCtx.beginPath();brandCtx.roundRect(26,28,154,154,28);brandCtx.fill();
+            brandCtx.fillStyle='#172b32';brandCtx.font='800 112px system-ui';brandCtx.fillText('R',78,151);
+            brandCtx.fillStyle='#263d3e';brandCtx.font='800 48px system-ui';brandCtx.fillText(companyName.toUpperCase().slice(0,25),215,101);
+            brandCtx.fillStyle='#687674';brandCtx.font='500 25px system-ui';brandCtx.fillText('EXECUTIVE OFFICE · EST. 2026',217,151);
+            const brandSign=new THREE.Mesh(new THREE.PlaneGeometry(8.2,1.9),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(brandCanvas),side:THREE.DoubleSide}));
+            brandSign.position.set(0,3.15,-19.79);scene.add(brandSign);
+            // Framed office artwork, a clock, and a progress display on the rear feature wall.
+            const artMat=new THREE.MeshStandardMaterial({color:0xe7e0d2,roughness:.6});
+            for(const [x,tint] of [[-13,0x648c82],[13,0x9a7958]]){
+                const frame=new THREE.Mesh(new THREE.BoxGeometry(3.6,2.2,.14),brass);frame.position.set(x,2.65,-19.72);scene.add(frame);
+                const canvas=document.createElement('canvas');canvas.width=360;canvas.height=220;const c=canvas.getContext('2d');
+                c.fillStyle='#eee9df';c.fillRect(0,0,360,220);c.fillStyle='#263d3e';c.font='bold 20px system-ui';c.fillText(x<0?'OUR PRINCIPLES':'QUARTERLY VIEW',20,35);
+                c.strokeStyle='#b8b2a5';c.beginPath();c.moveTo(25,185);c.lineTo(335,185);c.moveTo(25,65);c.lineTo(25,185);c.stroke();
+                for(let i=0;i<6;i++){c.fillStyle=`#${tint.toString(16).padStart(6,'0')}`;c.fillRect(52+i*43,142-(i%3)*25,20,43+(i%3)*25)}
+                const picture=new THREE.Mesh(new THREE.PlaneGeometry(3.28,1.9),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas)}));picture.position.set(x,2.65,-19.62);scene.add(picture);
+            }
+            const clockFace=new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,.16,32),cream);clockFace.rotation.x=Math.PI/2;clockFace.position.set(7,3.35,-19.68);scene.add(clockFace);
+            const clockRing=new THREE.Mesh(new THREE.TorusGeometry(.72,.07,10,32),brass);clockRing.position.set(7,3.35,-19.58);scene.add(clockRing);
+            const glassFront=new THREE.Mesh(new THREE.BoxGeometry(53.5,3.2,.08),glass);glassFront.position.set(0,1.62,frontZ);scene.add(glassFront);
+            for(let x=-26;x<=26;x+=4.5){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,3.4,.14),brass);post.position.set(x,1.7,frontZ);scene.add(post)}
+            for(const x of [-.72,.72]){const door=new THREE.Mesh(new THREE.BoxGeometry(1.34,3,.06),glass);door.position.set(x,1.58,frontZ-.08);scene.add(door);const handle=new THREE.Mesh(new THREE.BoxGeometry(.055,.66,.08),brass);handle.position.set(x+(x<0?.48:-.48),1.5,frontZ-.17);scene.add(handle)}
+            // Reception counter and generous circulation area at the front.
+            const reception=new THREE.Mesh(new THREE.BoxGeometry(4.9,1.02,1.2),walnut);reception.position.set(0,.68,frontZ-3.1);reception.castShadow=true;scene.add(reception);
+            const receptionTop=new THREE.Mesh(new THREE.BoxGeometry(5.12,.13,1.3),brass);receptionTop.position.set(0,1.22,frontZ-3.1);scene.add(receptionTop);
+            const receptionFace=new THREE.Mesh(new THREE.BoxGeometry(4.3,.47,.045),cream);receptionFace.position.set(0,.68,frontZ-2.48);scene.add(receptionFace);
+            // Discreet perimeter inlay: pale stone remains the dominant floor color.
+            const trim=new THREE.Mesh(new THREE.BoxGeometry(53,.035,.06),brass);trim.position.set(0,.07,0);scene.add(trim);
+            const spots=new THREE.MeshBasicMaterial({color:0xffe5af});
+            for(let x=-15;x<=15;x+=5)for(let z=-15;z<=frontZ-5;z+=7){const light=new THREE.Mesh(new THREE.SphereGeometry(.11,10,8),spots);light.position.set(x,4.8,z);scene.add(light)}
+        }
+
+        // Small block-style office characters inspired by the diorama reference.
         function createCharacter(x, z, bodyColor) {
             const group = new THREE.Group();
-            
-            // Badan
-            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.2, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.6;
-            body.castShadow = true;
-            group.add(body);
-
-            // Kepala
-            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xffeaa7 });
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = 1.5;
-            head.castShadow = true;
-            group.add(head);
-
+            const suit = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: .72 });
+            const skin = new THREE.MeshStandardMaterial({ color: 0xd9a781, roughness: .82 });
+            const dark = new THREE.MeshStandardMaterial({ color: 0x252d34, roughness: .8 });
+            const shirt = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: .7 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(.67,.82,.43), suit);
+            torso.position.y=1.05; torso.castShadow=true; group.add(torso);
+            const head = new THREE.Mesh(new THREE.BoxGeometry(.57,.56,.53),skin);
+            head.position.set(0,1.78,.025); head.castShadow=true; group.add(head);
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(.59,.19,.55),dark); hair.position.set(0,2.08,-.015); group.add(hair);
+            const sideHair = new THREE.Mesh(new THREE.BoxGeometry(.13,.25,.54),dark); sideHair.position.set(-.23,1.96,-.005); group.add(sideHair);
+            const eyeGeo = new THREE.BoxGeometry(.055,.055,.025); const eyes=[];
+            [-.105,.105].forEach(ex=>{const eye=new THREE.Mesh(eyeGeo,dark);eye.position.set(ex,1.82,.292);group.add(eye);eyes.push(eye)});
+            const shirtFront = new THREE.Mesh(new THREE.BoxGeometry(.16,.52,.035),shirt); shirtFront.position.set(0,1.08,.24); group.add(shirtFront);
+            const tie = new THREE.Mesh(new THREE.BoxGeometry(.08,.39,.045),new THREE.MeshStandardMaterial({color:0xc4a15c,roughness:.55})); tie.position.set(0,1.04,.27); group.add(tie);
+            const legs=[];
+            [-.19,.19].forEach(lx=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(.2,.62,.24),suit);leg.position.set(lx,.36,0);leg.castShadow=true;group.add(leg);const shoe=new THREE.Mesh(new THREE.BoxGeometry(.22,.11,.32),dark);shoe.position.set(lx,.075,.08);group.add(shoe);legs.push(leg)});
+            const arms=[];
+            [-1,1].forEach(side=>{const pivot=new THREE.Group();pivot.position.set(side*.39,1.39,.02);const arm=new THREE.Mesh(new THREE.BoxGeometry(.2,.62,.23),suit);arm.position.y=-.29;arm.rotation.z=side*-.11;arm.castShadow=true;pivot.add(arm);const cuff=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.24),shirt);cuff.position.set(0,-.56,.006);pivot.add(cuff);const hand=new THREE.Mesh(new THREE.BoxGeometry(.17,.15,.18),skin);hand.position.set(0,-.66,.025);pivot.add(hand);group.add(pivot);arms.push(pivot)});
+            group.userData={arms,legs,baseY:0};
             group.position.set(x, 0, z);
             return group;
         }
 
         // --- MENYUSUN RUANGAN ---
 
-        // 1. Lantai
-        const floorGeo = new THREE.PlaneGeometry(30, 30);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, side: THREE.DoubleSide });
+        // One spacious floor with a dedicated four-column open workspace.
+        const floorGeo = new THREE.PlaneGeometry(54, 42 + officeExtension);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xcfd3d0, side: THREE.DoubleSide, roughness: .42, metalness: .015 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = Math.PI / 2;
+        floor.position.z = officeExtension / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // 2. Garis Grid Lantai (Opsional)
-        const gridHelper = new THREE.GridHelper(30, 30, 0x00cec9, 0x636e72);
-        gridHelper.position.y = 0.01;
-        scene.add(gridHelper);
+        // Refined open-plan office with dedicated executive, finance, HR, archive, meeting, and lounge zones.
+        createRoom(-13,-13,12,9,0xc7cbc6,'RUANG CEO','DIREKSI');
+        createRoom(0,-13,10,9,0xd0d3ce,'FINANCE','KEUANGAN');
+        createRoom(11,-13,9,9,0xcbd2ce,'HRD','PEOPLE & CULTURE');
+        createRoom(21,-13,8.5,9.5,0xd2d4cf,'ARSIP','DOKUMEN & BERKAS');
 
-        // 3. Tambahkan Meja & Karakter (CEO)
-        const ceoDesk = createDesk(0, -10, 0xfdcb6e); // Meja Kuning (CEO)
-        scene.add(ceoDesk);
-        const ceoChar = createCharacter(0, -8.5, 0x0984e3); // Karakter Biru
-        scene.add(ceoChar);
+        const characters=[];
+        function addStaff(x,z,color,phase,role,employee=null,rotation=Math.PI){
+            const person=createCharacter(x,z,color);person.rotation.y=rotation;scene.add(person);characters.push({person,phase,role});
+            if(employee?.name){
+                const badge=document.createElement('canvas');badge.width=480;badge.height=112;const ctx=badge.getContext('2d');
+                ctx.fillStyle='#18363aeb';ctx.roundRect(4,4,472,104,22);ctx.fill();ctx.strokeStyle='#c6a15d';ctx.lineWidth=4;ctx.stroke();
+                ctx.fillStyle='#f5f1e8';ctx.font='700 31px system-ui';ctx.fillText(String(employee.name).slice(0,24),22,49);
+                ctx.fillStyle='#c9d8d3';ctx.font='500 23px system-ui';const activity=({working:'Sedang bekerja',moving:'Berpindah',meeting:'Rapat',break:'Istirahat',done:'Tugas selesai',error:'Butuh bantuan',waiting:'Menunggu'})[employee.status]||employee.department||'Tim kantor';ctx.fillText(activity.slice(0,31),22,84);
+                const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(badge),transparent:true,depthTest:true}));sprite.position.set(x,2.78,z+.42);sprite.scale.set(2.5,.58,1);scene.add(sprite);
+            }
+            return person;
+        }
 
-        // 4. Tambahkan Meja & Karakter (Keuangan)
-        const finDesk = createDesk(10, -10, 0x00b894); // Meja Hijau
-        scene.add(finDesk);
-        const finChar = createCharacter(10, -8.5, 0x00b894);
-        scene.add(finChar);
+        // Executive office: oversized walnut desk, visitor seating, credenza, awards, and fresh greenery.
+        const walnutTop=new THREE.MeshStandardMaterial({color:0x74533a,roughness:.38});
+        const paleStone=new THREE.MeshStandardMaterial({color:0xd8d8d0,roughness:.34});
+        const darkCabinet=new THREE.MeshStandardMaterial({color:0x3d4948,roughness:.55});
+        const ceoDesk=createDesk(-13,-14,0x74533a);ceoDesk.scale.set(1.32,.9,1.18);scene.add(ceoDesk);
+        createChair(-13,-11.7,Math.PI,0x43595b);
+        createChair(-15.5,-15.4,.12,0x6a7771);createChair(-10.5,-15.4,-.12,0x6a7771);
+        const credenza=new THREE.Mesh(new THREE.BoxGeometry(4.5,1.1,.75),darkCabinet);credenza.position.set(-13,-.0,-17.1);credenza.position.y=.65;credenza.castShadow=true;scene.add(credenza);
+        const awardMat=new THREE.MeshStandardMaterial({color:0xc7a55e,metalness:.68,roughness:.26});
+        for(let i=0;i<3;i++){const award=new THREE.Mesh(new THREE.BoxGeometry(.38,.7,.28),awardMat);award.position.set(-14.2+i*1.15,1.55,-17.05);scene.add(award)}
+        createPlant(-17,-16.5,.9);
 
-        // 5. Tambahkan Meja & Karakter (HRD)
-        const hrDesk = createDesk(-10, -10, 0xe84393); // Meja Pink
-        scene.add(hrDesk);
-        const hrChar = createCharacter(-10, -8.5, 0xe84393);
-        scene.add(hrChar);
+        // Finance: individual stations, filing drawers, and a shared document counter.
+        for(let i=0;i<3;i++){
+            const x=-2.7+i*2.7;const desk=createDesk(x,-13,0x76563d);desk.scale.setScalar(.73);scene.add(desk);
+            createChair(x,-11.2,Math.PI,0x506b69);
+        }
+        const financeCabinet=new THREE.Mesh(new THREE.BoxGeometry(5.5,1.45,.7),darkCabinet);financeCabinet.position.set(0,.78,-17.1);financeCabinet.castShadow=true;scene.add(financeCabinet);
+        for(let i=0;i<6;i++){const drawer=new THREE.Mesh(new THREE.BoxGeometry(.72,.29,.025),paleStone);drawer.position.set(-2.25+i*.9,.62,-16.73);scene.add(drawer);const pull=new THREE.Mesh(new THREE.BoxGeometry(.2,.045,.035),new THREE.MeshStandardMaterial({color:0xb7a27a,metalness:.52}));pull.position.set(-2.25+i*.9,.62,-16.69);scene.add(pull)}
 
-        // 6. Open Space (Karyawan)
-        const empDesk1 = createDesk(-5, 0, 0x0984e3);
-        scene.add(empDesk1);
-        const empChar1 = createCharacter(-5, 1.5, 0x6c5ce7);
-        scene.add(empChar1);
+        // HR: a desk, two interview chairs, a low cabinet, and plants for a welcoming feel.
+        const hrdDesk=createDesk(11,-13,0x76563d);hrdDesk.scale.setScalar(.82);scene.add(hrdDesk);createChair(11,-11,Math.PI,0x536b63);
+        createChair(9,-15.6,.1,0x72877a);createChair(13,-15.6,-.1,0x72877a);
+        const hrdStorage=new THREE.Mesh(new THREE.BoxGeometry(5.4,1.35,.62),darkCabinet);hrdStorage.position.set(11,.73,-17.1);scene.add(hrdStorage);
+        createPlant(7.5,-16.1,.72);createPlant(14.5,-16.1,.72);
 
-        const empDesk2 = createDesk(0, 0, 0x0984e3);
-        scene.add(empDesk2);
-        const empChar2 = createCharacter(0, 1.5, 0x6c5ce7);
-        scene.add(empChar2);
+        // Archive room: sturdy wall-to-wall shelves with labeled binders and an accessible sorting desk.
+        const shelfWood=new THREE.MeshStandardMaterial({color:0x684d38,roughness:.58});
+        const binderColors=[0x738d91,0x9b765b,0x667a66,0xb6a37c,0x526777];
+        for(let row=0;row<2;row++){
+            const sz=-17.0+row*2.55;
+            const uprights=new THREE.Mesh(new THREE.BoxGeometry(.12,2.8,.5),shelfWood);uprights.position.set(19.35,1.45,sz);scene.add(uprights);
+            const uprights2=uprights.clone();uprights2.position.x=22.65;scene.add(uprights2);
+            for(let level=0;level<3;level++){
+                const shelf=new THREE.Mesh(new THREE.BoxGeometry(3.45,.12,.58),shelfWood);shelf.position.set(21,.48+level*.93,sz);shelf.castShadow=true;scene.add(shelf);
+                for(let b=0;b<5;b++){const binder=new THREE.Mesh(new THREE.BoxGeometry(.44,.68,.43),new THREE.MeshStandardMaterial({color:binderColors[(b+level+row)%binderColors.length],roughness:.72}));binder.position.set(19.65+b*.67,.87+level*.93,sz);binder.castShadow=true;scene.add(binder);const spine=new THREE.Mesh(new THREE.BoxGeometry(.22,.035,.012),paleStone);spine.position.set(19.65+b*.67,.95+level*.93,sz+.22);scene.add(spine)}
+            }
+        }
+        const archiveDesk=createDesk(21,-10.5,0x74533a);archiveDesk.scale.setScalar(.72);scene.add(archiveDesk);
+        createChair(21,-8.9,Math.PI,0x536b69);
 
-        const empDesk3 = createDesk(5, 0, 0x0984e3);
-        scene.add(empDesk3);
-        const empChar3 = createCharacter(5, 1.5, 0x6c5ce7);
-        scene.add(empChar3);
+        // Main team area: four-person desk islands, grouped and rotated so it reads as an office, not a classroom.
+        const suitColors=[0x35566e,0x65577f,0x446b5a,0x795c4b,0x415675,0x805947,0x4b686c,0x66513e];
+        const podCenters=[];const podColumns=[-13.2,-4.4,4.4,13.2];
+        for(let row=0;row<workstationRows;row++)for(let col=0;col<podColumns.length;col++)podCenters.push([podColumns[col]+(row%2?.45:-.45),3.4+row*10]);
+        const stationAngles=[0,Math.PI/2,Math.PI,-Math.PI/2];
+        for(let i=0;i<workspaceCapacity;i++){
+            const pod=podCenters[Math.floor(i/4)]||[0,3.4+Math.floor(i/16)*10];
+            const angle=stationAngles[i%4],radius=1.75;
+            const x=pod[0]+Math.sin(angle)*radius,z=pod[1]+Math.cos(angle)*radius;
+            const desk=createDesk(x,z,0x76563d);desk.scale.set(.66,.66,.66);desk.rotation.y=angle;scene.add(desk);
+            const seatX=pod[0]+Math.sin(angle)*2.55,seatZ=pod[1]+Math.cos(angle)*2.55;
+            createChair(seatX,seatZ,angle,0x465d61);
+            if(i<staffCount){
+                const employee=teamRoster[i]||null;
+                const role=employee?.status==='meeting'?'meeting':employee?.status==='break'?'break':employee?.status==='moving'?'moving':'working';
+                addStaff(pod[0]+Math.sin(angle)*2.2,pod[1]+Math.cos(angle)*2.2,suitColors[i%suitColors.length],i*.61,role,employee,Math.PI+angle);
+            }
+        }
+        // Low shared planters give each pod a little privacy while keeping sightlines open.
+        for(let row=0;row<workstationRows;row++)for(const x of [-8.8,0,8.8])createPlanter(x,8.4+row*10,2.1,.68,.78);
+        createPlant(-25,4.3,.95);createPlant(25,5,.95);createPlant(-17,22,.8);createPlant(17,22,.8);
+
+        // Spacious lounge: soft seating, coffee table, and a compact beverage counter.
+        const loungeX=-22.3;
+        const loungeRug=new THREE.Mesh(new THREE.PlaneGeometry(7.3,6.8),new THREE.MeshStandardMaterial({color:0xaebdb6,roughness:.92}));loungeRug.rotation.x=-Math.PI/2;loungeRug.position.set(loungeX,.09,15.2);scene.add(loungeRug);
+        const sofaMat=new THREE.MeshStandardMaterial({color:0x536e67,roughness:.82});
+        const sofaBase=new THREE.Mesh(new THREE.BoxGeometry(4.6,.65,1.35),sofaMat);sofaBase.position.set(loungeX,.62,13.4);sofaBase.castShadow=true;scene.add(sofaBase);
+        const sofaBack=new THREE.Mesh(new THREE.BoxGeometry(4.6,1.15,.3),sofaMat);sofaBack.position.set(loungeX,1.35,12.9);sofaBack.castShadow=true;scene.add(sofaBack);
+        for(const x of [loungeX-2.4,loungeX,loungeX+2.4]){const cushion=new THREE.Mesh(new THREE.BoxGeometry(2.2,.11,1.05),new THREE.MeshStandardMaterial({color:0x6d887d,roughness:.82}));cushion.position.set(x,.99,13.48);scene.add(cushion)}
+        const coffee=new THREE.Mesh(new THREE.BoxGeometry(2.35,.17,1.25),walnutTop);coffee.position.set(loungeX,.66,16.1);coffee.castShadow=true;scene.add(coffee);
+        const coffeeLegs=new THREE.Mesh(new THREE.BoxGeometry(1.9,.55,.12),darkCabinet);coffeeLegs.position.set(loungeX,.36,16.1);scene.add(coffeeLegs);
+        // Beverage bar with cups, coffee machine, and water dispenser.
+        const drinkBar=new THREE.Mesh(new THREE.BoxGeometry(4.4,1.25,1.05),darkCabinet);drinkBar.position.set(loungeX,.68,19.3);drinkBar.castShadow=true;scene.add(drinkBar);
+        const barTop=new THREE.Mesh(new THREE.BoxGeometry(4.55,.14,1.15),paleStone);barTop.position.set(loungeX,1.35,19.3);scene.add(barTop);
+        const machine=new THREE.Mesh(new THREE.BoxGeometry(.85,1.18,.72),new THREE.MeshStandardMaterial({color:0x303d3f,metalness:.35,roughness:.32}));machine.position.set(loungeX-1.15,1.96,19.28);scene.add(machine);
+        for(let i=0;i<3;i++){const cup=new THREE.Mesh(new THREE.CylinderGeometry(.17,.13,.31,12),new THREE.MeshStandardMaterial({color:0xf1eee4,roughness:.42}));cup.position.set(loungeX+.95+i*.52,1.61,19.12);scene.add(cup)}
+        const waterJug=new THREE.Mesh(new THREE.CylinderGeometry(.33,.31,.76,16),new THREE.MeshPhysicalMaterial({color:0xa6d4df,roughness:.15,transparent:true,opacity:.48}));waterJug.position.set(loungeX+1.75,1.8,19.45);scene.add(waterJug);
+        createPlant(loungeX-3.7,18.2,.72);createPlant(loungeX+3.7,18.2,.72);
+
+        // A calm six-seat meeting nook instead of a classroom-style boardroom.
+        const meetingZ=15.1,meetingX=22.3;
+        const meetingRug=new THREE.Mesh(new THREE.PlaneGeometry(7,6),new THREE.MeshStandardMaterial({color:0xbec6c1,roughness:.92}));meetingRug.rotation.x=-Math.PI/2;meetingRug.position.set(meetingX,.085,meetingZ);scene.add(meetingRug);
+        const meetingTop=new THREE.Mesh(new THREE.BoxGeometry(3.8,.24,1.7),walnutTop);meetingTop.position.set(meetingX,1.42,meetingZ);meetingTop.castShadow=true;scene.add(meetingTop);
+        const meetingBase=new THREE.Mesh(new THREE.BoxGeometry(.22,1.3,.22),darkCabinet);meetingBase.position.set(meetingX,.71,meetingZ);scene.add(meetingBase);
+        for(let i=0;i<3;i++){createChair(meetingX-2.65,meetingZ-1.1+i*1.1,Math.PI/2,0x465d61);createChair(meetingX+2.65,meetingZ-1.1+i*1.1,-Math.PI/2,0x465d61)}
+        createPlanter(18.1,17.6,1.2,.8,.9);
+        addLuxuryArchitecture();
+        // Place the supplied crown mark on a pale-blue plaque; the original black backdrop is keyed away.
+        const logoImage=new Image();
+        logoImage.onload=()=>{
+            const logoCanvas=document.createElement('canvas');logoCanvas.width=900;logoCanvas.height=600;
+            const logoCtx=logoCanvas.getContext('2d',{willReadFrequently:true});logoCtx.fillStyle='#dcebf5';logoCtx.fillRect(0,0,900,600);logoCtx.drawImage(logoImage,0,0,900,600);
+            const pixels=logoCtx.getImageData(0,0,900,600);for(let p=0;p<pixels.data.length;p+=4){const l=(pixels.data[p]*299+pixels.data[p+1]*587+pixels.data[p+2]*114)/1000;if(l<44){pixels.data[p+3]=Math.round(Math.max(0,(l-7)/(44-7))*pixels.data[p+3])}}logoCtx.putImageData(pixels,0,0);
+            const logoTexture=new THREE.CanvasTexture(logoCanvas);logoTexture.colorSpace=THREE.SRGBColorSpace;
+            const plaque=new THREE.Mesh(new THREE.PlaneGeometry(6.1,4.05),new THREE.MeshBasicMaterial({map:logoTexture,side:THREE.DoubleSide}));plaque.position.set(0,2.25,-19.55);scene.add(plaque);
+        };
+        logoImage.src='./brand-logo-source.jpeg';
+        document.getElementById('info').textContent=`${companyName.toUpperCase()} · RUANG KERJA ${workspaceCapacity} KURSI · ${staffCount} STAF SAAT INI · CEO, FINANCE, HRD, ARSIP & LOUNGE — Seret untuk memutar, gulir untuk zoom`;
 
 
         // --- ANIMASI (Looping) ---
@@ -190,14 +419,14 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Animasi sederhana: Karakter bergerak naik-turun sedikit (seperti bernapas/mengetik)
-            ceoChar.position.y = Math.sin(time * 2) * 0.05;
-            finChar.position.y = Math.sin(time * 2 + 1) * 0.05;
-            hrChar.position.y = Math.sin(time * 2 + 2) * 0.05;
-            
-            empChar1.position.y = Math.sin(time * 3) * 0.05;
-            empChar2.position.y = Math.sin(time * 3 + 0.5) * 0.05;
-            empChar3.position.y = Math.sin(time * 3 + 1) * 0.05;
+            characters.forEach(({person,phase,role})=>{
+                person.position.y=Math.sin(time*2+phase)*.025;
+                person.userData.arms.forEach((arm,index)=>{
+                    const motion=role==='working'?.22:role==='meeting'?.11:role==='break'?.06:.09;
+                    arm.rotation.x=Math.sin(time*2.7+phase+index*.8)*motion;
+                });
+                person.userData.legs.forEach((leg,index)=>{leg.rotation.z=Math.sin(time*2+phase+index)*.025});
+            });
 
             controls.update();
             renderer.render(scene, camera);
